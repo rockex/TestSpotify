@@ -111,7 +111,7 @@ public class AdminList {
 			try {				
 				BuscarCancion(PlayList[j]);				
 				
-				if(flag ==2) {j--;}//Reintenta con el mismo artista si no carga la pista
+				if(flag ==2) {j--;}//Reintenta con el mismo artista si no carga la pista!
 				flag = 1;
 				
 			}catch(Exception ex){
