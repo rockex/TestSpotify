@@ -2,6 +2,10 @@ package TestSpotify.TestSpotify;
 
 
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -95,18 +99,29 @@ public class AdminList {
 		 * 
 		 */
 		
-		String[] PlayList = { "Nickelback", "System of a Down", "Metallica", "Pearl Jam" };
+		String[] PlayList = { "Nickelback", "System of a Down", "Metallica", "Pearl Jam", "Linkin Park", "Rammstein", 
+							  "Five Finger Death Punch", "Foo Fighters", "Incubus"};
 		int numRandom = (int) (Math.random() * 3);
-		//System.out.println("---->:::: "+numRandom);
+		//System.out.println("---->:::: "+PlayList.length+" numRandom: "+numRandom);
 		
-		for(int j=0;j<=3;j++) {	
-			BuscarCancion(PlayList[j]);
+
+
+		for(int j=0;j<PlayList.length;j++) {
 			
-			//wait de 30 segundos
-			Thread.sleep(30000);
-			flag = 1;
-		}
-		
+			try {				
+				BuscarCancion(PlayList[j]);				
+				
+				if(flag ==2) {j--;}//Reintenta con el mismo artista si no carga la pista
+				flag = 1;
+				
+			}catch(Exception ex){
+				
+				System.out.println("ERROR AL SELECCIONAR "+ PlayList[j] +", SE DESCUENTA -1 AL CICLO: "+ j +" PARA REINTENTAR");
+				j--;							
+			}			
+		}//Fin FOR			
+
+	
 		//cierra navegador
         driver.quit();
 
@@ -128,30 +143,62 @@ public class AdminList {
 		txtBusqueda.clear();
 		txtBusqueda.sendKeys(Artista);		
 		
-		//wait de 8 segundos
+		//wait de 8 segundos = 8000 milisegundos
 		Thread.sleep(8000);
 		
-		//Se cae o no genera 
+		//Conteo de Canciones 
 		wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//*[@id='main']/div/div[4]/div[2]/div[1]/section/div[2]/div/div/div[1]/div[2]/section/section/ol/div")));		
 		int TotalRegistros = driver.findElements(By.xpath("//*[@id='main']/div/div[4]/div[2]/div[1]/section/div[2]/div/div/div[1]/div[2]/section/section/ol/div")).size();
-		//int numeroRandom = (int) (Math.random() * TotalRegistros);	
-		
+
+		//Seteo Rango Random
 		int minimo = 1;
 		int maximo = 4;
-		int numeroRandom=(int)Math.floor(Math.random()*(maximo-minimo+1)+(minimo));
-		
+		int numeroRandom=(int)Math.floor(Math.random()*(maximo-minimo+1)+(minimo));		
 		System.out.println("--> numeroRandom: " + numeroRandom + "--> TotalRegistros: " + TotalRegistros);
-		
-
-		//Si el span no existe, cambia a otro que si exista (4)
-		//if(driver.findElements(By.xpath("//*[@id='main']/div/div[4]/div[2]/div[1]/section/div[2]/div/div/div[1]/div[2]/section/section/ol/div["+ numeroRandom +"]/div/li/div[1]/div[2]/span")).size() == 0) {
-		//	numeroRandom = 4;
-		//	System.out.println("--> Se cambio Numero Random: " + numeroRandom);
-		//} 
-		
+				
 		
 		WebElement DivSeleccionar = driver.findElement(By.xpath("//*[@id='main']/div/div[4]/div[2]/div[1]/section/div[2]/div/div/div[1]/div[2]/section/section/ol/div["+ numeroRandom +"]/div/li/div[1]/div[2]/span"));
-		DivSeleccionar.click();
+		DivSeleccionar.click();		
+		WebElement ProgressTime = driver.findElement(By.xpath("//*[@id='main']/div/div[5]/footer/div/div[2]/div/div[2]/div[1]"));
+			
+		int cont = 0;
+		while (true) {//Condición trivial: siempre cierta
+			System.out.println("-->EN ESPERA AL INICIO DE LA PISTA..." + cont);
+			
+			if(ProgressTime.getText().equalsIgnoreCase("0:01")) {System.out.println("-->INICIO DE PISTA EXITOSO");break;}
+			
+			//Valida el tiempo de espera, para reintentar otra pista
+			if(cont>=600) {
+				System.out.println("-->ERROR EN LA CARGA DE LA PISTA");
+				flag = 2;
+				return;
+			}
+			
+			cont = cont +1;		
+		}
+		
+		//Cuando inicie la pista, obtiene los datos de  la cancion
+		WebElement NameSong = driver.findElement(By.xpath("//*[@id='main']/div/div[5]/footer/div/div[1]/div/div/div[1]/div/span"));
+		WebElement TimeSong = driver.findElement(By.xpath("//*[@id='main']/div/div[5]/footer/div/div[2]/div/div[2]/div[3]"));
+		System.out.println("Song: "+ NameSong.getText() +" --> Duracion: "+TimeSong.getText()+" --> Progress: "+ProgressTime.getText());
+		
+				
+		
+		//RESTA SEGUNDOS A UNA FECHA O VARIABLE TIME
+		DateFormat df = new SimpleDateFormat("m:ss");
+		Date TimeLimite = df.parse(TimeSong.getText());
+	    Calendar cal = Calendar.getInstance();
+	    cal.setTime(TimeLimite);
+	    cal.add(Calendar.SECOND, -8);
+	    TimeLimite = cal.getTime();
+	        
+		
+		while (true) {//Condición trivial: siempre cierta			
+			if(ProgressTime.getText().toString().equalsIgnoreCase(df.format(TimeLimite).toString())) {
+				System.out.println("SE COMPLETO TIEMPO DE REPRODUCCION, FIN....NEXT SONG!!!");
+				break;}else {System.out.println("**"+ProgressTime.getText()+"**");}
+		}
+		
 		
 	}
 	
